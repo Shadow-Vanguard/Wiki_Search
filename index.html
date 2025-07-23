@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wikimedia Commons Explorer</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="index.css">
+    
+
+    <style>
+        /* Light theme (default) */
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #3cefcb;
+            --background-color: #f5f5f5;
+            --card-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            --text-color: #333;
+            --error-color: #ff5252;
+            --success-color: #4caf50;
+            --card-background: white;
+            --border-color: #e0e0e0;
+            --modal-background: white;
+            --header-text: white;
+        }
+    
+        /* Dark theme */
+        [data-theme="dark"] {
+            --primary-color: black;
+            --secondary-color: #4DD0E1;
+            --background-color: #121212;
+            --card-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            --text-color: blue;
+            --error-color: #FF5252;
+            --success-color: #81C784;
+            --card-background: #1E1E1E;
+            --border-color: #333;
+            --modal-background: #1E1E1E;
+            --header-text: #E0E0E0;
+        }
+    
+        /* Apply theme to elements */
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+    
+        .search-container, .gallery-item, .modal-content {
+            background: var(--card-background);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+    
+        input[type="text"], 
+        select {
+            background-color: var(--card-background);
+            color: var(--text-color);
+            border-color: var(--border-color);
+            transition: all 0.3s ease;
+        }
+    
+        .theme-toggle-btn {
+            background-color: black;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+    
+        .theme-toggle-btn:hover {
+            background-color: var(--secondary-color);
+        }
+    
+        .theme-toggle-btn.dark {
+            background-color: orange;
+        }
+    
+        .theme-toggle-btn.dark:hover {
+            background-color: #4DD0E1;
+        }
+    </style>
+    <style>
+        /* Theme Dropdown Styles */
+        .theme-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+    
+        .theme-dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            min-width: 160px;
+            background-color: var(--card-background);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            z-index: 1000;
+            margin-top: 5px;
+        }
+    
+        .theme-dropdown:hover .theme-dropdown-content {
+            display: block;
+        }
+    
+        .theme-option {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            background: none;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+    
+        .theme-option:hover {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+    
+        /* Theme Variables */
+        :root {
+            /* Light theme (default) */
+            --primary-color: #2196F3;
+            --secondary-color: #3cefcb;
+            --background-color: #f5f5f5;
+            --card-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            --text-color: #333;
+            --error-color: #ff5252;
+            --success-color: #4caf50;
+            --card-background: white;
+            --border-color: #e0e0e0;
+            --modal-background: white;
+            --header-text: white;
+        }
+    
+        /* Dark theme */
+        [data-theme="dark"] {
+            --primary-color: #64B5F6;
+            --secondary-color: #4DD0E1;
+            --background-color: #121212;
+            --card-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            --text-color: #E0E0E0;
+            --error-color: #FF5252;
+            --success-color: #81C784;
+            --card-background: #1E1E1E;
+            --border-color: #333;
+            --modal-background: #1E1E1E;
+            --header-text: #E0E0E0;
+        }
+    
+        /* Christmas theme */
+        [data-theme="christmas"] {
+            --primary-color: #D42426;
+            --secondary-color: #0C8A36;
+            --background-color: #FFF4F4;
+            --card-shadow: 0 2px 8px rgba(212,36,38,0.2);
+            --text-color: #2C3E50;
+            --error-color: #D42426;
+            --success-color: #0C8A36;
+            --card-background: white;
+            --border-color: #D42426;
+            --modal-background: white;
+            --header-text: white;
+        }
+    
+        /* Halloween theme */
+        [data-theme="halloween"] {
+            --primary-color: #FF6B00;
+            --secondary-color: #8B00FF;
+            --background-color: #1A1A1A;
+            --card-shadow: 0 2px 8px rgba(255,107,0,0.3);
+            --text-color: #FF6B00;
+            --error-color: #FF0000;
+            --success-color: #00FF00;
+            --card-background: #2D2D2D;
+            --border-color: #FF6B00;
+            --modal-background: #2D2D2D;
+            --header-text: #FF6B00;
+        }
+    </style>
+    
+    
+    <script>
+        function changeTheme(theme) {
+            // Save the theme preference
+            localStorage.setItem('theme', theme);
+            
+            // Apply the theme
+            document.documentElement.setAttribute('data-theme', theme);
+            
+            // Update button icon and text based on theme
+            const themeBtn = document.getElementById('themeToggleBtn');
+            const icon = themeBtn.querySelector('i:first-child');
+            
+            // Update icon based on theme
+            switch(theme) {
+                case 'dark':
+                    icon.className = 'fas fa-moon';
+                    break;
+                case 'light':
+                    icon.className = 'fas fa-sun';
+                    break;
+                case 'christmas':
+                    icon.className = 'fas fa-gift';
+                    break;
+                case 'halloween':
+                    icon.className = 'fas fa-ghost';
+                    break;
+                default:
+                    icon.className = 'fas fa-palette';
+            }
+        }
+    
+        // On page load, apply saved theme
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            changeTheme(savedTheme);
+        });
+    </script>
+
+</head>
+<body>
+    <div class="header">
+        <div class="bouncing-icons">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Commons-logo.svg" class="bounce-icon commons" alt="Wikimedia Commons">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/7/75/Wikimedia_Community_Logo.svg" class="bounce-icon wikimedia" alt="Wikimedia">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/8/81/Wikimedia-logo.svg" class="bounce-icon wikimedia-alt" alt="Wikimedia Alternative">
+
+            <img src="https://upload.wikimedia.org/wikipedia/commons/8/81/Wikimedia-logo.svg" class="bounce-icon wikimedia-alt-2" alt="Wikimedia Alternative">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Commons-logo.svg" class="bounce-icon commons-2" alt="Wikimedia Commons">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/7/75/Wikimedia_Community_Logo.svg" class="bounce-icon wikimedia-2" alt="Wikimedia">
+        </div>
+        <h1>Wikimedia Commons Explorer</h1>
+        <p class="subtitle">Discover and explore free media from Wikimedia Commons</p>
+        
+    </div>
+
+
+
+    <div class="container">
+        <div class="search-container">
+            <div class="search-options">
+                <div class="search-wrapper">
+                    <input type="text" id="searchInput" placeholder="Search for images, videos, and more...">
+                    <div id="searchSuggestions" class="search-suggestions"></div>
+                    <button id="voiceSearchBtn" class="voice-search-btn" data-tooltip="Record voice for search">   
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                </div>
+                <select id="fileType">
+                    <option value="all">All Media</option>
+                    <option value="image">Images</option>
+                    <option value="video">Videos</option>
+                    <option value="other">Other Files</option>
+                </select>
+
+
+                <button onclick="performSearch()">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <button onclick="searchByLocation()">
+                    <i class="fas fa-map-marker-alt"></i> Location Search
+                </button>
+            </div>
+            
+            <div class="filters">
+                <select id="sortBy">
+                    <option value="relevance">Sort by Relevance</option>
+                    <option value="date">Sort by Date</option>
+                    <option value="size">Sort by Size</option>
+                </select>
+                <select id="limit">
+                    <option value="20">20 results</option>
+                    <option value="50">50 results</option>
+                    <option value="100">100 results</option>
+                </select>
+                <button onclick="toggleMap()">
+                    <i class="fas fa-map"></i> Toggle Map
+                </button>
+
+            <!-- Replace the existing button with this dropdown structure -->
+            <div class="theme-dropdown">
+                <button id="themeToggleBtn" class="theme-toggle-btn">
+                    <i class="fas fa-palette"></i>
+                    <span>Change Theme</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="theme-dropdown-content">
+                    <button onclick="changeTheme('light')" class="theme-option">
+                        <i class="fas fa-sun"></i> Light
+                    </button>
+                    <button onclick="changeTheme('dark')" class="theme-option">
+                        <i class="fas fa-moon"></i> Dark
+                    </button>
+                    <button onclick="changeTheme('christmas')" class="theme-option">
+                        <i class="fas fa-gift"></i> Christmas
+                    </button>
+                    <button onclick="changeTheme('halloween')" class="theme-option">
+                        <i class="fas fa-ghost"></i> Halloween
+                    </button>
+                </div>
+            </div>
+                
+            </div>
+    
+            
+        </div>
+
+        <div id="mapSearchMessage">Click on the map to search for media from that location</div>
+        <div id="map"></div>
+        <div id="gallery" class="gallery"></div>
+    </div>
+
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <img id="modalImage" class="modal-image" src="" alt="">
+            <div id="modalDetails" class="modal-details"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="index.js"></script>
+    <script>
+        // Add this to verify JavaScript is loading
+        console.log('JavaScript loaded');
+    </script>
+
+    <script>
+        // Theme toggle functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            
+            // Check for saved theme preference
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateDarkModeButton(savedTheme === 'dark');
+
+            darkModeToggle.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateDarkModeButton(newTheme === 'dark');
+            });
+        });
+
+        function updateDarkModeButton(isDark) {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const icon = darkModeToggle.querySelector('i');
+            const text = darkModeToggle.querySelector('span');
+            
+            if (isDark) {
+                icon.className = 'fas fa-sun';
+                text.textContent = 'Light Mode';
+                darkModeToggle.classList.add('dark');
+            } else {
+                icon.className = 'fas fa-moon';
+                text.textContent = 'Dark Mode';
+                darkModeToggle.classList.remove('dark');
+            }
+        }
+    </script>
+
+</body>
+</html>
